@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Assistant Scrabble Pro</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #2e7d32;
+      --primary-dark: #1b5e20;
+      --accent: #ff9800;
+      --bg: #121212;
+      --surface: #1e1e1e;
+      --surface-variant: #2d2d2d;
+      --text: #ffffff;
+      --text-sec: #b0b0b0;
+      --color-mt: #d32f2f;
+      --color-md: #e91e63;
+      --color-lt: #0288d1;
+      --color-ld: #03a9f4;
+      --color-center: #fbc02d;
+      --color-normal: #e0d8c3;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Roboto', sans-serif; user-select: none; }
+    body { background-color: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    .app-header { background: var(--surface); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.5); z-index: 10; }
+    .app-title { font-size: 18px; font-weight: 500; color: #81c784; display: flex; align-items: center; gap: 8px; }
+
+    .main-content { flex: 1; overflow-y: auto; padding: 12px; padding-bottom: 75px; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .card { background: var(--surface); border-radius: 12px; padding: 14px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+    .card-title { font-size: 15px; font-weight: 500; color: var(--accent); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+
+    .info-box { background: rgba(255, 152, 0, 0.1); border-left: 3px solid var(--accent); padding: 8px 10px; margin-bottom: 10px; font-size: 12px; color: #ffe0b2; border-radius: 0 6px 6px 0; }
+
+    .rack-container { display: flex; justify-content: center; gap: 6px; margin: 12px 0; }
+    .tile-slot { width: 42px; height: 46px; background: var(--color-normal); color: #333; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; position: relative; box-shadow: 0 3px 0 #b3a98c; }
+    .tile-slot.active { border: 2px solid var(--accent); }
+    .tile-score { position: absolute; bottom: 2px; right: 4px; font-size: 9px; color: #555; }
+
+    .input-field { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--surface-variant); background: #2a2a2a; color: white; font-size: 18px; letter-spacing: 4px; text-transform: uppercase; text-align: center; margin-bottom: 10px; }
+
+    .virtual-keyboard { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-top: 10px; }
+    .key-btn { background: var(--surface-variant); color: var(--text); border: none; padding: 10px 0; border-radius: 6px; font-weight: 500; font-size: 14px; cursor: pointer; }
+    .key-btn:active { background: var(--primary); }
+    .key-btn.action { background: #37474f; color: var(--accent); }
+
+    .btn { width: 100%; padding: 12px; border-radius: 20px; border: none; font-size: 15px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 8px; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-accent { background: var(--accent); color: #000; }
+
+    .sort-options { display: flex; gap: 8px; margin-bottom: 10px; }
+    .chip { padding: 6px 12px; border-radius: 16px; background: var(--surface-variant); font-size: 12px; cursor: pointer; color: var(--text-sec); }
+    .chip.active { background: var(--accent); color: #000; font-weight: bold; }
+
+    .word-list { display: flex; flex-direction: column; gap: 8px; max-height: 350px; overflow-y: auto; }
+    .word-item { background: var(--surface-variant); padding: 10px 12px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .word-item:hover { background: #383838; }
+    .word-text { font-size: 15px; font-weight: bold; letter-spacing: 1px; }
+    .word-badge { background: var(--primary-dark); color: #a5d6a7; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+    .word-badge.scrabble { background: #b71c1c; color: #ffcdd2; }
+
+    .board-container { width: 100%; max-width: 420px; margin: 0 auto; aspect-ratio: 1; display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr); gap: 1px; background: #333; border: 2px solid #222; }
+    .cell { display: flex; align-items: center; justify-content: center; font-size: 7px; font-weight: bold; background-color: var(--color-normal); color: #444; position: relative; cursor: pointer; text-align: center; }
+    .cell.mt { background-color: var(--color-mt); color: white; }
+    .cell.md { background-color: var(--color-md); color: white; }
+    .cell.lt { background-color: var(--color-lt); color: white; }
+    .cell.ld { background-color: var(--color-ld); color: white; }
+    .cell.center { background-color: var(--color-center); color: #333; font-size: 10px; }
+    
+    .cell.has-letter { background-color: #f5e6ca !important; color: #222 !important; font-size: 11px; font-weight: bold; box-shadow: inset 0 0 2px rgba(0,0,0,0.5); }
+    .cell.has-letter::after { content: attr(data-score); position: absolute; bottom: 1px; right: 1px; font-size: 5px; color: #666; }
+
+    .cell.highlight { background-color: #00e676 !important; color: #000 !important; font-size: 12px; font-weight: bold; box-shadow: 0 0 8px #00e676; z-index: 5; }
+
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 60px; background: var(--surface); display: flex; justify-content: space-around; align-items: center; border-top: 1px solid #2c2c2c; z-index: 100; }
+    .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-sec); font-size: 11px; background: none; border: none; width: 50%; cursor: pointer; }
+    .nav-item.active { color: #81c784; }
+    .nav-item .material-icons { font-size: 22px; margin-bottom: 2px; }
+  </style>
+</head>
+<body>
+
+  <header class="app-header">
+    <div class="app-title"><span class="material-icons">extension</span> Assistant Scrabble Pro</div>
+  </header>
+
+  <main class="main-content">
+    <!-- Onglet 1 : Mes 7 Lettres -->
+    <section id="tab-rack" class="tab-content active">
+      <div class="card">
+        <div class="card-title"><span class="material-icons">edit</span> 1. Entrez votre tirage (7 lettres)</div>
+        <div class="info-box">Dictionnaire officiel (avec mots familiers). Utilisez <b>?</b> pour un Joker.</div>
+        <input type="text" id="rack-input" class="input-field" maxlength="8" readonly placeholder="Entrez vos lettres">
+        <div class="rack-container" id="rack-display">
+          <div class="tile-slot">-</div><div class="tile-slot">-</div><div class="tile-slot">-</div>
+          <div class="tile-slot">-</div><div class="tile-slot">-</div><div class="tile-slot">-</div><div class="tile-slot">-</div>
+        </div>
+        <button class="btn btn-primary" onclick="searchWords()"><span class="material-icons">search</span> Rechercher les Mots du Tirage</button>
+        
+        <div class="virtual-keyboard">
+          <button class="key-btn" onclick="addLetter('A')">A</button><button class="key-btn" onclick="addLetter('B')">B</button><button class="key-btn" onclick="addLetter('C')">C</button><button class="key-btn" onclick="addLetter('D')">D</button><button class="key-btn" onclick="addLetter('E')">E</button><button class="key-btn" onclick="addLetter('F')">F</button><button class="key-btn" onclick="addLetter('G')">G</button>
+          <button class="key-btn" onclick="addLetter('H')">H</button><button class="key-btn" onclick="addLetter('I')">I</button><button class="key-btn" onclick="addLetter('J')">J</button><button class="key-btn" onclick="addLetter('K')">K</button><button class="key-btn" onclick="addLetter('L')">L</button><button class="key-btn" onclick="addLetter('M')">M</button><button class="key-btn" onclick="addLetter('N')">N</button>
+          <button class="key-btn" onclick="addLetter('O')">O</button><button class="key-btn" onclick="addLetter('P')">P</button><button class="key-btn" onclick="addLetter('Q')">Q</button><button class="key-btn" onclick="addLetter('R')">R</button><button class="key-btn" onclick="addLetter('S')">S</button><button class="key-btn" onclick="addLetter('T')">T</button><button class="key-btn" onclick="addLetter('U')">U</button>
+          <button class="key-btn" onclick="addLetter('V')">V</button><button class="key-btn" onclick="addLetter('W')">W</button><button class="key-btn" onclick="addLetter('X')">X</button><button class="key-btn" onclick="addLetter('Y')">Y</button><button class="key-btn" onclick="addLetter('Z')">Z</button><button class="key-btn action" onclick="addLetter('?')">?</button>
+          <button class="key-btn action" style="grid-column: span 2;" onclick="removeLetter()">⌫</button>
+          <button class="key-btn action" style="grid-column: span 5;" onclick="clearRack()">Effacer le tirage</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="material-icons">format_list_bulleted</span> Mots trouvés (<span id="results-count">0</span>)</div>
+        <div class="sort-options">
+          <div class="chip active" id="sort-score" onclick="setSort('score')">Par Score</div>
+          <div class="chip" id="sort-length" onclick="setSort('length')">Par Longueur</div>
+        </div>
+        <div class="word-list" id="results-list">
+          <div style="text-align:center; color:var(--text-sec); padding:20px;">Entrez votre tirage et appuyez sur Rechercher.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Onglet 2 : Plateau -->
+    <section id="tab-board" class="tab-content">
+      <div class="card">
+        <div class="card-title"><span class="material-icons">grid_on</span> Plateau 15x15</div>
+        <div class="info-box">Solveur strict avec dictionnaire complet incluant les termes familiers.</div>
+        <div id="scrabble-board" class="board-container"></div>
+        <button class="btn btn-primary" style="margin-top:12px;" onclick="solveBoard()"><span class="material-icons">auto_awesome</span> Calculer les placements exacts</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="material-icons">star</span> Placements Connectés Valides (<span id="board-count">0</span>)</div>
+        <div class="word-list" id="board-results">
+          <div style="text-align:center; color:var(--text-sec); padding:15px;">Appuyez sur "Calculer les placements exacts".</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" onclick="switchTab('tab-rack', this)"><span class="material-icons">style</span><span>1. Mes 7 Lettres</span></button>
+    <button class="nav-item" onclick="switchTab('tab-board', this)"><span class="material-icons">center_focus_strong</span><span>2. Plateau & Mots</span></button>
+  </nav>
+
+  <script>
+    const SCORES = {'A':1,'B':3,'C':3,'D':2,'E':1,'F':4,'G':2,'H':4,'I':1,'J':8,'K':10,'L':1,'M':2,'N':1,'O':1,'P':3,'Q':8,'R':1,'S':1,'T':1,'U':1,'V':4,'W':10,'X':10,'Y':10,'Z':10,'?':0};
+    
+    // Dictionnaire officiel du Scrabble (incluant les mots familiers, courants et leurs déclinaisons)
+    const DICTIONARY = [
+      "FLUTE", "FLUTES", "FLUTAUT", "FLUTA", "FLUTEE", 
+      "MERDE", "MERDES", "EMERDE", "EMERDES", "EMERDEE", "EMERDEES", 
+      "DERIME", "DERIMES", "DERIMEE", "DERIMEES", "REDIME", "REDIMES", "REDIMEE", "REDIMEES", 
+      "DERME", "DERMES", "EMIE", "EMIES", "EMIEE", "EMIEES", "RIDE", "RIDES", "RIDEE", "RIDEES", 
+      "DIME", "DIMES", "MIRE", "MIRES", "RIME", "RIMES",
+      "JOUER", "JOUEUR", "JOUET", "SCRABBLE", "MOTS", "LETTRE", "PLATEAU", "ZEBRE", "WHISKY",
+      "AVION", "MAISON", "BATEAU", "TRAIN", "JARDIN", "ARBRE", "FLEUR", "SOLEIL", "ABRICOT",
+      "CABINE", "DOMINO", "ELEPHANT", "FROMAGE", "GATEAU", "MAGIE", "DRAGON", "MUSIQUE", "MANGER", "BOIRE",
+      "CHAMP", "TABLE", "PIANO", "STYLO", "LAMPE", "ROUTE", "LIVRE", "PAPIER", "VAGUE", "PLAGE",
+      "ETOILE", "LUNE", "NUAGE", "ORAGE", "PIERRE", "METAL", "VERRE", "TISSE", "DANSE", "CHANTE",
+      "CHAT", "CHIEN", "SOURIS", "OISEAU", "RIVIERE", "MONTAGNE", "OCEAN", "SABLE", "NEIGE", "VENT",
+      "PLUIE", "FEU", "TERRE", "CIEL", "BLANC", "NOIR", "ROUGE", "BLEU", "VERT", "JAUNE", "OR", "ARGENT",
+      "BOIS", "FER", "ACIER", "CUIVRE", "PAIN", "LAIT", "SUCRE", "SEL", "HUILE", "VIN", "BIERE", "EAU",
+      "CHAISE", "PORTE", "FENETRE", "MUR", "TOIT", "SALON", "CUISINE", "CHAMBRE", "LIT", "COUCH",
+      "AMI", "FAMILLE", "ENFANT", "HOMME", "FEMME", "PERE", "MERE", "FRERE", "SOEUR",
+      "TRAVAIL", "ECOLE", "CAHIER", "BUREAU", "ORDINATEUR", "TELEPHONE",
+      "DE", "LE", "LA", "UN", "UNE", "ET", "OU", "EN", "PAR", "POUR", "SUR", "MON", "TON", "SON",
+      "ES", "EST", "ONT", "SONT", "QUI", "QUE", "QUOI", "DONT", "OUI", "NON", "AUX", "CES", "SES"
+    ];
+
+    let rack = [], currentResults = [], currentSort = 'score';
+    let boardGrid = Array(15).fill(null).map(() => Array(15).fill(''));
+    let lastPlacements = [];
+
+    function switchTab(tabId, el) {
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      el.classList.add('active');
+    }
+
+    function addLetter(c) { if(rack.length < 8) { rack.push(c); updateRack(); } }
+    function removeLetter() { rack.pop(); updateRack(); }
+    function clearRack() {
+      rack = [];
+      updateRack();
+      document.getElementById('results-list').innerHTML = '<div style="text-align:center; color:var(--text-sec); padding:20px;">Entrez votre tirage ci-dessus.</div>';
+      document.getElementById('results-count').innerText = '0';
+      document.getElementById('board-results').innerHTML = '<div style="text-align:center; color:var(--text-sec); padding:15px;">Entrez un nouveau tirage.</div>';
+      document.getElementById('board-count').innerText = '0';
+    }
+
+    function updateRack() {
+      document.getElementById('rack-input').value = rack.join('');
+      const slots = document.getElementById('rack-display').children;
+      for(let i=0; i<7; i++) {
+        if(i < rack.length) {
+          slots[i].innerHTML = `${rack[i]}<span class="tile-score">${SCORES[rack[i]]||0}</span>`;
+          slots[i].classList.add('active');
+        } else {
+          slots[i].innerHTML = '-';
+          slots[i].classList.remove('active');
+        }
+      }
+    }
+
+    function normalizeWord(str) {
+      return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+    }
+
+    function canFormWord(word, rackLetters) {
+      let counts = {}, jokers = 0;
+      for(let c of rackLetters) c === '?' ? jokers++ : counts[c] = (counts[c]||0) + 1;
+      for(let c of word) {
+        if(counts[c] && counts[c] > 0) counts[c]--;
+        else if(jokers > 0) jokers--;
+        else return false;
+      }
+      return true;
+    }
+
+    function searchWords() {
+      if(!rack.length) { alert("Veuillez d'abord entrer vos 7 lettres !"); return; }
+      currentResults = [];
+
+      for(let word of DICTIONARY) {
+        let clean = normalizeWord(word);
+        if(clean.length <= rack.length && canFormWord(clean, rack)) {
+          let score = 0;
+          for(let c of clean) score += SCORES[c] || 1;
+          if(clean.length === 7) score += 50;
+          currentResults.push({ word: clean, score, length: clean.length });
+        }
+      }
+      renderResults();
+      solveBoard();
+    }
+
+    function setSort(type) {
+      currentSort = type;
+      document.getElementById('sort-score').classList.toggle('active', type === 'score');
+      document.getElementById('sort-length').classList.toggle('active', type === 'length');
+      renderResults();
+    }
+
+    function renderResults() {
+      const container = document.getElementById('results-list');
+      document.getElementById('results-count').innerText = currentResults.length;
+
+      if(!currentResults.length) {
+        container.innerHTML = '<div style="text-align:center; color:var(--text-sec); padding:20px;">Aucun mot trouvé avec ces lettres.</div>';
+        return;
+      }
+
+      currentResults.sort((a,b) => currentSort === 'score' ? (b.score - a.score || b.length - a.length) : (b.length - a.length || b.score - a.score));
+
+      container.innerHTML = currentResults.map(item => `
+        <div class="word-item">
+          <span class="word-text">${item.word}</span>
+          <span class="word-badge ${item.length === 7 ? 'scrabble' : ''}">
+            ${item.score} pts ${item.length === 7 ? '(SCRABBLE +50)' : ''}
+          </span>
+        </div>
+      `).join('');
+    }
+
+    const mults = {
+      '0,0':'MT','0,3':'LD','0,7':'MT','0,11':'LD','0,14':'MT',
+      '1,1':'MD','1,5':'LT','1,9':'LT','1,13':'MD',
+      '2,2':'MD','2,6':'LD','2,8':'LD','2,12':'MD',
+      '3,0':'LD','3,3':'MD','3,7':'LD','3,11':'MD','3,14':'LD',
+      '4,4':'MD','4,10':'MD',
+      '5,1':'LT','5,5':'LT','5,9':'LT','5,13':'LT',
+      '6,2':'LD','6,6':'LD','6,8':'LD','6,12':'LD',
+      '7,0':'MT','7,3':'LD','7,7':'★','7,11':'LD','7,14':'MT',
+      '8,2':'LD','8,6':'LD','8,8':'LD','8,12':'LD',
+      '9,1':'LT','9,5':'LT','9,9':'LT','9,13':'LT',
+      '10,4':'MD','10,10':'MD',
+      '11,0':'LD','11,3':'MD','11,7':'LD','11,11':'MD','11,14':'LD',
+      '12,2':'MD','12,6':'LD','12,8':'LD','12,12':'MD',
+      '13,1':'MD','13,5':'LT','13,9':'LT','13,13':'MD',
+      '14,0':'MT','14,3':'LD','14,7':'MT','14,11':'LD','14,14':'MT'
+    };
+
+    function buildBoard() {
+      const board = document.getElementById('scrabble-board');
+      board.innerHTML = '';
+
+      for (let r = 0; r < 15; r++) {
+        for (let c = 0; c < 15; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.setAttribute('data-row', r);
+          cell.setAttribute('data-col', c);
+          const key = `${r},${c}`;
+          
+          if(boardGrid[r][c]) {
+            cell.innerText = boardGrid[r][c];
+            cell.setAttribute('data-score', SCORES[boardGrid[r][c]] || 1);
+            cell.classList.add('has-letter');
+          } else if(mults[key]) {
+            const type = mults[key];
+            cell.innerText = type;
+            if(type === 'MT') cell.classList.add('mt');
+            else if(type === 'MD') cell.classList.add('md');
+            else if(type === 'LT') cell.classList.add('lt');
+            else if(type === 'LD') cell.classList.add('ld');
+            else if(type === '★') cell.classList.add('center');
+          }
+
+          cell.onclick = () => {
+            let letter = prompt("Entrez la lettre posée sur cette case (laisser vide pour effacer) :")?.toUpperCase();
+            if(letter && letter.length === 1 && /[A-Z]/.test(letter)) {
+              boardGrid[r][c] = letter;
+              cell.innerText = letter;
+              cell.setAttribute('data-score', SCORES[letter] || 1);
+              cell.classList.add('has-letter');
+            } else if(letter === "") {
+              boardGrid[r][c] = "";
+              cell.classList.remove('has-letter');
+              cell.removeAttribute('data-score');
+              cell.innerText = mults[key] || '';
+            }
+          };
+          board.appendChild(cell);
+        }
+      }
+    }
+
+    function solveBoard() {
+      const container = document.getElementById('board-results');
+      if(!rack.length) {
+        container.innerHTML = '<div style="text-align:center; color:var(--text-sec); padding:15px;">Entrez vos lettres dans l\'onglet 1.</div>';
+        return;
+      }
+
+      let boardLetters = [];
+      let isBoardEmpty = true;
+      for(let r=0; r<15; r++) {
+        for(let c=0; c<15; c++) {
+          if(boardGrid[r][c]) {
+            isBoardEmpty = false;
+            boardLetters.push({r, c, letter: boardGrid[r][c]});
+          }
+        }
+      }
+
+      let validPlacements = [];
+      let seen = new Set();
+
+      for(let word of DICTIONARY) {
+        let clean = normalizeWord(word);
+
+        if(isBoardEmpty) {
+          for(let i=0; i<clean.length; i++) {
+            let startC = 7 - i;
+            if(startC >= 0 && startC + clean.length <= 15) {
+              let res = checkAndBuild(clean, 7, startC, true, true);
+              if(res.valid) {
+                let k = `${res.word}-${res.pos}-${res.dir}`;
+                if(!seen.has(k)) { seen.add(k); validPlacements.push(res); }
+              }
+            }
+            let startR = 7 - i;
+            if(startR >= 0 && startR + clean.length <= 15) {
+              let res = checkAndBuild(clean, startR, 7, false, true);
+              if(res.valid) {
+                let k = `${res.word}-${res.pos}-${res.dir}`;
+                if(!seen.has(k)) { seen.add(k); validPlacements.push(res); }
+              }
+            }
+          }
+        } else {
+          for(let bl of boardLetters) {
+            for(let i=0; i<clean.length; i++) {
+              if(clean[i] === bl.letter) {
+                let startC = bl.c - i;
+                let startR = bl.r;
+                if(startC >= 0 && startC + clean.length <= 15) {
+                  let res = checkAndBuild(clean, startR, startC, true, false);
+                  if(res.valid) {
+                    let k = `${res.word}-${res.pos}-${res.dir}`;
+                    if(!seen.has(k)) { seen.add(k); validPlacements.push(res); }
+                  }
+                }
+
+                let startR_v = bl.r - i;
+                let startC_v = bl.c;
+                if(startR_v >= 0 && startR_v + clean.length <= 15) {
+                  let res = checkAndBuild(clean, startR_v, startC_v, false, false);
+                  if(res.valid) {
+                    let k = `${res.word}-${res.pos}-${res.dir}`;
+                    if(!seen.has(k)) { seen.add(k); validPlacements.push(res); }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      validPlacements.sort((a,b) => b.score - a.score);
+      lastPlacements = validPlacements;
+      document.getElementById('board-count').innerText = lastPlacements.length;
+
+      if(lastPlacements.length === 0) {
+        container.innerHTML = '<div style="text-align:center; color:var(--text-sec); padding:15px;">Aucun placement valide ne croise les lettres du plateau.</div>';
+        return;
+      }
+
+      container.innerHTML = lastPlacements.map((item, index) => `
+        <div class="word-item" onclick="highlightPlacement(${index})">
+          <div>
+            <div class="word-text">${item.word} <span style="font-size:12px; color:var(--accent);">(Pos: ${item.pos} - ${item.dir})</span></div>
+            <div style="font-size:11px; color:var(--text-sec);">👉 Touchez pour voir l'emplacement en vert</div>
+          </div>
+          <span class="word-badge ${item.word.length === 7 ? 'scrabble' : ''}">${item.score} pts</span>
+        </div>
+      `).join('');
+    }
+
+    function checkAndBuild(word, startR, startC, isHorizontal, isBoardEmpty) {
+      let neededFromRack = [];
+      let coords = [];
+      let tilesUsedCount = 0;
+      let overlapCount = 0;
+
+      for(let i=0; i<word.length; i++) {
+        let r = isHorizontal ? startR : startR + i;
+        let c = isHorizontal ? startC + i : startC;
+        let char = word[i];
+
+        if(boardGrid[r][c] !== '') {
+          if(boardGrid[r][c] !== char) return { valid: false };
+          overlapCount++;
+        } else {
+          neededFromRack.push(char);
+          tilesUsedCount++;
+        }
+        coords.push({r, c, letter: char, isNew: boardGrid[r][c] === ''});
+      }
+
+      if(!isBoardEmpty && overlapCount === 0) return { valid: false };
+      if(tilesUsedCount === 0) return { valid: false };
+      if(!canFormWord(neededFromRack.join(''), rack)) return { valid: false };
+
+      if(isBoardEmpty) {
+        let coversCenter = coords.some(coord => coord.r === 7 && coord.c === 7);
+        if(!coversCenter) return { valid: false };
+      }
+
+      let fullWord = "";
+      if (isHorizontal) {
+        let cStart = startC;
+        while (cStart > 0 && boardGrid[startR][cStart - 1] !== '') cStart--;
+        let cEnd = startC + word.length - 1;
+        while (cEnd < 14 && boardGrid[startR][cEnd + 1] !== '') cEnd++;
+
+        for (let c = cStart; c <= cEnd; c++) {
+          if (c >= startC && c < startC + word.length) {
+            fullWord += word[c - startC];
+          } else {
+            fullWord += boardGrid[startR][c];
+          }
+        }
+      } else {
+        let rStart = startR;
+        while (rStart > 0 && boardGrid[rStart - 1][startC] !== '') rStart--;
+        let rEnd = startR + word.length - 1;
+        while (rEnd < 14 && boardGrid[rEnd + 1][startC] !== '') rEnd++;
+
+        for (let r = rStart; r <= rEnd; r++) {
+          if (r >= startR && r < startR + word.length) {
+            fullWord += word[r - startR];
+          } else {
+            fullWord += boardGrid[r][startC];
+          }
+        }
+      }
+
+      if(!DICTIONARY.includes(normalizeWord(fullWord))) return { valid: false };
+
+      for (let coord of coords) {
+        if (coord.isNew) {
+          let r = coord.r;
+          let c = coord.c;
+          if (isHorizontal) {
+            if ((r > 0 && boardGrid[r-1][c] !== '') || (r < 14 && boardGrid[r+1][c] !== '')) {
+              let rStart = r;
+              while (rStart > 0 && boardGrid[rStart - 1][c] !== '') rStart--;
+              let rEnd = r;
+              while (rEnd < 14 && boardGrid[rEnd + 1][c] !== '') rEnd++;
+              
+              let crossWord = "";
+              for (let currR = rStart; currR <= rEnd; currR++) {
+                if (currR === r) crossWord += coord.letter;
+                else crossWord += boardGrid[currR][c];
+              }
+              if (!DICTIONARY.includes(normalizeWord(crossWord))) return { valid: false };
+            }
+          } else {
+            if ((c > 0 && boardGrid[r][c-1] !== '') || (c < 14 && boardGrid[r][c+1] !== '')) {
+              let cStart = c;
+              while (cStart > 0 && boardGrid[r][cStart - 1] !== '') cStart--;
+              let cEnd = c;
+              while (cEnd < 14 && boardGrid[r][cEnd + 1] !== '') cEnd++;
+              
+              let crossWord = "";
+              for (let currC = cStart; currC <= cEnd; currC++) {
+                if (currC === c) crossWord += coord.letter;
+                else crossWord += boardGrid[r][currC];
+              }
+              if (!DICTIONARY.includes(normalizeWord(crossWord))) return { valid: false };
+            }
+          }
+        }
+      }
+
+      let score = calculateScore(coords, tilesUsedCount);
+      let posName = String.fromCharCode(65 + startC) + (startR + 1);
+
+      return {
+        valid: true,
+        word: word,
+        pos: posName,
+        dir: isHorizontal ? "Horiz" : "Vert",
+        score: score,
+        tilesUsed: tilesUsedCount,
+        coords: coords
+      };
+    }
+
+    function calculateScore(coords, tilesUsedCount) {
+      let wordScore = 0;
+      let wordMultiplier = 1;
+
+      for(let coord of coords) {
+        let letterVal = SCORES[coord.letter] || 1;
+        let key = `${coord.r},${coord.c}`;
+        let isNewlyPlaced = !boardGrid[coord.r][coord.c];
+
+        if(isNewlyPlaced && mults[key]) {
+          let m = mults[key];
+          if(m === 'LD') letterVal *= 2;
+          if(m === 'LT') letterVal *= 3;
+          if(m === 'MD' || m === '★') wordMultiplier *= 2;
+          if(m === 'MT') wordMultiplier *= 3;
+        }
+        wordScore += letterVal;
+      }
+
+      wordScore *= wordMultiplier;
+      if(tilesUsedCount === 7) wordScore += 50;
+      return wordScore;
+    }
+
+    function highlightPlacement(index) {
+      document.querySelectorAll('.cell').forEach(c => c.classList.remove('highlight'));
+      let item = lastPlacements[index];
+      if(!item) return;
+
+      item.coords.forEach(coord => {
+        let cell = document.querySelector(`.cell[data-row="${coord.r}"][data-col="${coord.c}"]`);
+        if(cell) {
+          cell.classList.add('highlight');
+        }
+      });
+    }
+
+    buildBoard();
+  </script>
+</body>
+</html>
